@@ -44,7 +44,7 @@ export default {
 					if (res.ok) {
 						self.addstate = true
 						setTimeout(() => self.addstate = null, 3000)
-						this.$emit("added")
+						self.$emit("added")
 						return
 					}
 					throw new Error(res.status);
