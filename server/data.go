@@ -310,6 +310,7 @@ func UserLogin(l *SessionLogger, email, password string) (code int, id string, c
 
 var userIDService <-chan string
 var SMTPPassword string
+var Domain string
 
 func init() {
 	go func() {
@@ -324,6 +325,7 @@ func init() {
 	}()
 
 	SMTPPassword = os.Getenv("RSN2_SMTP_PASSWORD")
+	Domain = os.Getenv("RSN2_DOMAIN")
 }
 
 func UserNew(l *SessionLogger, email, password string) int {
@@ -358,8 +360,8 @@ func UserNew(l *SessionLogger, email, password string) int {
 	src := md5.Sum([]byte(email))
 	token := make([]byte, hex.EncodedLen(len(src)))
 	hex.Encode(token, src[:])
-	url := "https://httpscolonslashslashwww.com/confirm-email?token=" + string(token) + id
-	durl := "https://httpscolonslashslashwww.com/delete-email?token=" + string(token) + id
+	url := Domain + "/confirm-email?token=" + string(token) + id
+	durl := Domain + "/delete-email?token=" + string(token) + id
 
 	// Send confirmation email
 	m := gomail.NewMessage()
