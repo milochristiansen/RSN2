@@ -47,6 +47,8 @@ COPY default.conf /etc/nginx/conf.d/default.conf
 COPY --from=certgen /certs/server.key /etc/ssl/private/server.key
 COPY --from=certgen /certs/server.crt /etc/ssl/misc/server.crt
 
+WORKDIR /app
+
 COPY --from=build-go /app/server.bin .
 
 EXPOSE 443
