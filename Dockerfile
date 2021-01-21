@@ -49,7 +49,5 @@ COPY --from=certgen /certs/server.crt /etc/ssl/misc/server.crt
 
 COPY --from=build-go /app/server.bin .
 
-WORKDIR /app
-
 EXPOSE 443
-CMD ["./server.bin"]
+CMD ["/app/server.bin"]
