@@ -44,7 +44,8 @@ export default {
 	},
 
 	created() {
-		this.socket = new ReconnectingWebSocket("ws://localhost:3366/api/article/feed", [], {
+		let l = window.location;
+		this.socket = new ReconnectingWebSocket("ws://" + l.host + "/api/article/feed", [], {
 			connectionTimeout: 20000
 		})
 		this.socket.addEventListener("message", this.refresh)
