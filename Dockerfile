@@ -11,7 +11,7 @@ RUN go build -o server.bin
 
 ########################################################################################################################
 
-FROM arm32v6/node:14 as build-frontend
+FROM arm32v6/node:lts-alpine3.10 as build-frontend
 
 WORKDIR /app
 
