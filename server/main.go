@@ -417,9 +417,8 @@ func main() {
 		typ := mime.TypeByExtension(GetExt(r.URL.Path))
 		content, err := fs.ReadAll(r.URL.Path[1:])
 		if err != nil {
-			l.E.Println("  Error:", err)
-			w.WriteHeader(http.StatusNotFound)
-			return
+			typ = "text/html"
+			content, _ = fs.ReadAll("index.html")
 		}
 		if typ != "" {
 			w.Header().Set("Content-Type", typ)
@@ -428,11 +427,6 @@ func main() {
 	})
 
 	go Background()
-
-	// err := http.ListenAndServe(":3366", nil)
-	// if err != nil {
-	// panic(err)
-	// }
 
 	err := http.ListenAndServeTLS(":443", "/app/cert/server.crt", "/app/cert/server.key", nil)
 	if err != nil {
