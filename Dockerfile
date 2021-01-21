@@ -15,9 +15,9 @@ FROM arm32v6/node:lts-alpine3.10 as build-frontend
 
 WORKDIR /app
 
-COPY public/ ./public
-COPY src/ ./src
-COPY package-lock.json package.json ./
+COPY frontend/public/ ./public
+COPY frontend/src/ ./src
+COPY frontend/package-lock.json frontend/package.json ./
 
 RUN npm install @vue/cli
 RUN npm i
