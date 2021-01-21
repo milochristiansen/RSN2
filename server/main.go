@@ -23,6 +23,8 @@ misrepresented as being the original software.
 // RSN2: Multi-user RSS feed tracker.
 package main
 
+import "fmt"
+import "mime"
 import "net/url"
 import "net/http"
 import "encoding/json"
@@ -33,10 +35,6 @@ import "github.com/milochristiansen/axis2/sources"
 const MaxBodyBytes = int64(65536)
 
 func main() {
-	ml.I.Println("Initializing AXIS VFS.")
-	fs := new(axis2.FileSystem)
-	fs.Mount("data", sources.NewOSDir("."), false)
-
 	// /api/user/confirm-email
 	http.HandleFunc("/api/user/confirm-email", func(w http.ResponseWriter, r *http.Request) {
 		l := newSessionLogger("/api/user/confirm-email")
@@ -407,10 +405,49 @@ func main() {
 		Feeds.Upgrade(l, w, r, user)
 	})
 
+	ml.I.Println("Initializing AXIS VFS.")
+	fs := new(axis2.FileSystem)
+	fs.Mount("", sources.NewOSDir("/app/html"), false)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		l := newSessionLogger("/")
+
+		l.I.Println("Page Request:" + r.URL.Path)
+
+		typ := mime.TypeByExtension(GetExt(r.URL.Path))
+		content, err := fs.ReadAll(r.URL.Path[1:])
+		if err != nil {
+			l.E.Println("  Error:", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if typ != "" {
+			w.Header().Set("Content-Type", typ)
+		}
+		fmt.Fprintf(w, "%s", content)
+	})
+
 	go Background()
 
-	err := http.ListenAndServe(":3366", nil)
+	// err := http.ListenAndServe(":3366", nil)
+	// if err != nil {
+	// panic(err)
+	// }
+
+	err := http.ListenAndServeTLS(":443", "/app/cert/server.crt", "/app/cert/server.key", nil)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func GetExt(name string) string {
+	// Find the last part of the extension
+	i := len(name) - 1
+	for i >= 0 {
+		if name[i] == '.' {
+			return name[i:]
+		}
+		i--
+	}
+	return ""
 }

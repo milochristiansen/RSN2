@@ -33,19 +33,18 @@ WORKDIR /certs
 
 RUN apk add openssl
 RUN openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 -subj \
-    "/C=US/ST=DC/L=DC/O=werabcontainers.com/CN=httpcolonslashslashwww.com" \
+    "/C=US/ST=DC/L=DC/O=httpcolonslashslashwww.com/CN=httpcolonslashslashwww.com" \
     -keyout ./server.key -out ./server.crt
 
 
 ########################################################################################################################
 
-FROM arm32v6/nginx:alpine
+FROM arm32v6/alpine
 
-COPY --from=build-frontend /app/dist/ /usr/share/nginx/html
-COPY default.conf /etc/nginx/conf.d/default.conf
+COPY --from=build-frontend /app/dist/ /app/html
 
-COPY --from=certgen /certs/server.key /etc/ssl/private/server.key
-COPY --from=certgen /certs/server.crt /etc/ssl/misc/server.crt
+COPY --from=certgen /certs/server.key /app/cert/server.key
+COPY --from=certgen /certs/server.crt /app/cert/server.crt
 
 WORKDIR /app
 
