@@ -23,6 +23,7 @@ misrepresented as being the original software.
 // RSN2: Multi-user RSS feed tracker.
 package main
 
+import "os"
 import "fmt"
 import "mime"
 import "net/url"
@@ -156,6 +157,52 @@ func main() {
 		}
 
 		w.WriteHeader(UserNew(l, data.Email, data.Password))
+	})
+
+	// /api/user/new-pass
+	http.HandleFunc("/api/user/new-pass", func(w http.ResponseWriter, r *http.Request) {
+		l := newSessionLogger("/api/user/new-pass")
+
+		user, status := GetSession(l, w, r)
+		if user == "" {
+			w.WriteHeader(status)
+			return
+		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
+
+		data := &UserNewPassData{}
+		err := json.NewDecoder(r.Body).Decode(data)
+		if err != nil {
+			l.W.Printf("Error parsing user update body. Error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(UserNewPass(l, user, data.OldPassword, data.Password))
+	})
+
+	// /api/user/new-name
+	http.HandleFunc("/api/user/new-name", func(w http.ResponseWriter, r *http.Request) {
+		l := newSessionLogger("/api/user/new-name")
+
+		user, status := GetSession(l, w, r)
+		if user == "" {
+			w.WriteHeader(status)
+			return
+		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
+
+		data := &UserLoginData{}
+		err := json.NewDecoder(r.Body).Decode(data)
+		if err != nil {
+			l.W.Printf("Error parsing user update body. Error: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(UserNewName(l, user, data.Password, data.Email))
 	})
 
 	// /api/feed/list
@@ -407,7 +454,11 @@ func main() {
 
 	ml.I.Println("Initializing AXIS VFS.")
 	fs := new(axis2.FileSystem)
-	fs.Mount("", sources.NewOSDir("/app/html"), false)
+	if os.Getenv("RSN2_ISDEV") == "" {
+		fs.Mount("", sources.NewOSDir("/app/html"), false)
+	} else {
+		fs.Mount("", sources.NewOSDir("./dist"), false)
+	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		l := newSessionLogger("/")
@@ -428,7 +479,15 @@ func main() {
 
 	go Background()
 
-	err := http.ListenAndServeTLS(":443", "/app/cert/server.crt", "/app/cert/server.key", nil)
+	if os.Getenv("RSN2_ISDEV") == "" {
+		err := http.ListenAndServeTLS(":443", "/app/cert/server.crt", "/app/cert/server.key", nil)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	err := http.ListenAndServe(":1025", nil)
 	if err != nil {
 		panic(err)
 	}

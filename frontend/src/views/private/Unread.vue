@@ -45,9 +45,15 @@ export default {
 
 	created() {
 		let l = window.location;
-		this.socket = new ReconnectingWebSocket("wss://" + l.host + "/api/article/feed", [], {
-			connectionTimeout: 20000
-		})
+		if (l.protocol == "http:") {
+			this.socket = new ReconnectingWebSocket("ws://" + l.host + "/api/article/feed", [], {
+				connectionTimeout: 20000
+			})
+		} else {
+			this.socket = new ReconnectingWebSocket("wss://" + l.host + "/api/article/feed", [], {
+				connectionTimeout: 20000
+			})
+		}
 		this.socket.addEventListener("message", this.refresh)
 	}
 }
@@ -57,6 +63,6 @@ export default {
 	section[name=body] {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		flex: 1;
 	}
 </style>

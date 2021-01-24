@@ -1,21 +1,19 @@
 <template>
-<div>
-	<Form :submit="submit">
-			<div>
-				<Field type="text" placeholder="Email" v-model="user" name="email" :rules="notempty"/>
-				<ErrorMessage class="error" name="email" />
-			</div>
-			<div>
-				<Field type="password" placeholder="Password" v-model="password" name="password" :rules="notempty"/>
-				<ErrorMessage class="error" name="password" />
-			</div>
-			<div>
-				<Field type="password" placeholder="Reenter Password" name="password2" :rules="match1"/>
-				<ErrorMessage class="error" name="password2" />
-			</div>
-			<input type="submit" value="Create Account">
-		</Form>
-</div>
+<Form :submit="submit">
+	<div>
+		<Field type="text" placeholder="Email" v-model="user" name="email" :rules="notempty"/>
+		<ErrorMessage class="error" name="email" />
+	</div>
+	<div>
+		<Field type="password" placeholder="Password" v-model="password" name="password" :rules="notempty"/>
+		<ErrorMessage class="error" name="password" />
+	</div>
+	<div>
+		<Field type="password" placeholder="Reenter Password" name="password2" :rules="match1"/>
+		<ErrorMessage class="error" name="password2" />
+	</div>
+	<input type="submit" value="Create Account">
+</Form>
 </template>
 
 <script>

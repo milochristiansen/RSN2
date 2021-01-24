@@ -2,40 +2,39 @@
 	<router-view @theme="swaptheme()" :theme="theme"/>
 </template>
 
-<style>
-	:root {
-	    --primary-color: #302AE6;
-	    --secondary-color: #536390;
-	    --font-color: #424242;
-	    --bg-color: #fff;
-	    --heading-color: #292922;
-	}
-	
-	:root[data-theme="dark"] {
-	    --primary-color: #9A97F3;
-	    --secondary-color: #818cab;
-	    --font-color: #e1e1ff;
-	    --bg-color: #161625;
-	    --heading-color: #818cab;
-	}
-</style>
-
 <style lang="scss">
+:root {
+    --primary-color: #302AE6;
+    --secondary-color: #536390;
+    --font-color: #424242;
+    --bg-color: #fff;
+    --heading-color: #292922;
+}
+
+:root[data-theme="dark"] {
+    --primary-color: #9A97F3;
+    --secondary-color: #818cab;
+    --font-color: #e1e1ff;
+    --bg-color: #161625;
+    --heading-color: #818cab;
+}
+
 html {
 	height: 100%;
+	padding: 0;
+	margin: 0;
 }
 body {
 	background-color: var(--bg-color);
 
 	max-width: 800px;
-	height: 100%;
-	
-	margin: 0 auto !important;
-	float: none !important;
-}
+	height: calc(100% - 10px);
+	padding-top: 10px;
+	margin: 0;
 
-#app {
-	height: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	
 	display: flex;
 	flex-direction: column;
 }

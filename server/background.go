@@ -49,7 +49,10 @@ func Background() {
 
 			f, err := fp.ParseURL(url)
 			if err != nil {
-				l.E.Printf("Error loading feed, error: %v\n", err)
+				l.E.Printf("Error loading feed %v (%v), error: %v\n", feed, url, err)
+				if f != nil {
+					l.I.Printf("%#v\n", f)
+				}
 				continue
 			}
 			for _, item := range f.Items {

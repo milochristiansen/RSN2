@@ -61,10 +61,10 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
 	section[name=body] {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		flex: 1;
 	}
 </style>

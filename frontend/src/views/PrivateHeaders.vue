@@ -50,7 +50,7 @@ export default {
 		color: var(--font-color);
 
 		margin-top: auto;
-		margin-bottom: 5px;
+		margin-bottom: 10px;
 		
 		a {
 			color: var(--font-color);;

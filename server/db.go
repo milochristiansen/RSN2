@@ -30,7 +30,6 @@ var DB *sql.DB
 var InitCode = `
 pragma foreign_keys = on;
 
-
 create table if not exists Users (
 	ID text primary key,
 	Email text unique not null,
@@ -122,6 +121,17 @@ var Queries = map[string]*queryHolder{
 	"UserEmailExists": &queryHolder{`
 		select exists(select 1 from Users where Email = ?1);
 	`, nil},
+	// /api/user/new-pass
+	"UserNewPass": &queryHolder{`
+		update Users set Password = ?2 where ID = ?1;
+	`, nil},
+	"UserGetPass": &queryHolder{`
+		select Password from Users where ID = ?1;
+	`, nil},
+	// /api/user/new-name
+	"UserNewName": &queryHolder{`
+		update Users set Email = ?2, CanLogin = 0 where ID = ?1;
+	`, nil},
 
 	// /api/feed/list
 	"FeedList": &queryHolder{`
@@ -151,7 +161,7 @@ var Queries = map[string]*queryHolder{
 		) from Articles where (
 			Feed = ?2 and
 			Feed in (select Feed from Subscribed where User = ?1)
-		);
+		) order by Published;
 	`, nil},
 	// /api/feed/subscribe
 	"FeedExistsByURL": &queryHolder{`
@@ -159,6 +169,9 @@ var Queries = map[string]*queryHolder{
 	`, nil},
 	"FeedAdd": &queryHolder{`
 		insert into Feeds (ID, URL) values (?1, ?2);
+	`, nil},
+	"FeedAlreadySubscibed": &queryHolder{`
+		select exists(select 1 from Subscribed where User = ?1 and Feed = ?2);
 	`, nil},
 	"FeedSubscibe": &queryHolder{`
 		insert into Subscribed (User, Feed, Name) values (?1, ?2, ?3);
@@ -202,7 +215,7 @@ var Queries = map[string]*queryHolder{
 		left join Subscribed fn on fn.Feed = a.Feed and fn.User = ?1 where (
 			not a.ID in (select Article from ReadFlags where User = ?1) and
 			not a.Feed in (select Feed from PausedFlags where User = ?1)
-		);
+		) order by Published;
 	`, nil},
 }
 

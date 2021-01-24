@@ -278,7 +278,6 @@ func EmailDelete(l *SessionLogger, confirmation string) int {
 
 // /api/user/login (one row)
 // =====================================================================================================================
-
 // also used for user creation
 type UserLoginData struct {
 	Email    string
@@ -289,7 +288,6 @@ type UserLoginData struct {
 // email is not confirmed.
 func UserLogin(l *SessionLogger, email, password string) (code int, id string, canlogin bool) {
 	dbpass := ""
-
 	err := Queries["UserLogin"].Preped.QueryRow(email).Scan(&id, &dbpass, &canlogin)
 	if err != nil {
 		l.W.Printf("Cannot find user %v in db, error: %v\n", email, err)
@@ -370,7 +368,7 @@ func UserNew(l *SessionLogger, email, password string) int {
 	m.SetHeader("Subject", "Verify your Email")
 	m.SetBody("text/html", `
 <h2>Welcome to RSN2!</h2>
-<p>before you can start using your new account you need to verify your email by clicking the following link:</p>
+<p>Before you can start using your new account you need to verify your email by clicking the following link:</p>
 <a href="`+url+`">`+url+`</a>
 <p>If you did not make this account, you can <a href="`+durl+`">delete it</a> instead.
 	`)
@@ -382,6 +380,101 @@ func UserNew(l *SessionLogger, email, password string) int {
 			return
 		}
 		l.I.Printf("Confirmation email for %v (%v) sent!\n", email, id)
+	}()
+
+	return http.StatusOK
+}
+
+type UserNewPassData struct {
+	OldPassword string
+	Password    string
+}
+
+func UserNewPass(l *SessionLogger, user, oldpassword, newpassword string) int {
+	// Hash password
+	hashed, err := bcrypt.GenerateFromPassword([]byte(newpassword), PasswordCost)
+	if err != nil {
+		l.W.Printf("Cannot update user %v with new password, error: %v\n", user, err)
+		return http.StatusInternalServerError
+	}
+
+	dbpass := ""
+	err = Queries["UserGetPass"].Preped.QueryRow(user).Scan(&dbpass)
+	if err != nil {
+		l.W.Printf("Cannot find user %v in db, error: %v\n", user, err)
+		return http.StatusBadRequest
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(dbpass), []byte(oldpassword))
+	if err != nil {
+		l.W.Printf("Password check failed for user %v, error: %v\n", user, err)
+		return http.StatusBadRequest
+	}
+
+	_, err = Queries["UserNewPass"].Preped.Exec(user, string(hashed))
+	if err != nil {
+		l.E.Printf("Cannot update user %v with new password, error: %v\n", user, err)
+		return http.StatusInternalServerError
+	}
+	return http.StatusOK
+}
+
+func UserNewName(l *SessionLogger, user, password, email string) int {
+	// Make sure the user doesn't exist.
+	ok := 0
+	err := Queries["UserEmailExists"].Preped.QueryRow(email).Scan(&ok)
+	if err != nil {
+		l.E.Printf("DB existence check failed for user email change %v, error: %v\n", email, err)
+		return http.StatusInternalServerError
+	}
+	if ok == 1 {
+		l.W.Printf("User with email %v already exists.\n", email)
+		return http.StatusBadRequest
+	}
+
+	dbpass := ""
+	err = Queries["UserGetPass"].Preped.QueryRow(user).Scan(&dbpass)
+	if err != nil {
+		l.W.Printf("Cannot find user %v in db, error: %v\n", user, err)
+		return http.StatusBadRequest
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(dbpass), []byte(password))
+	if err != nil {
+		l.W.Printf("Password check failed for user %v, error: %v\n", user, err)
+		return http.StatusBadRequest
+	}
+
+	_, err = Queries["UserNewName"].Preped.Exec(user, email)
+	if err != nil {
+		l.E.Printf("Cannot update user %v (%v) email in db, error: %v\n", email, user, err)
+		return http.StatusInternalServerError
+	}
+
+	// Generate confirmation token.
+	src := md5.Sum([]byte(email))
+	token := make([]byte, hex.EncodedLen(len(src)))
+	hex.Encode(token, src[:])
+	url := Domain + "/confirm-email?token=" + string(token) + user
+
+	// Send confirmation email
+	m := gomail.NewMessage()
+	m.SetHeader("From", "noreply@httpcolonslashslashwww.com")
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Verify your Email")
+	m.SetBody("text/html", `
+<h2>Thank you for using RSN2!</h2>
+<p>Before you can start using your account again you will need to verify your email by clicking the following link:</p>
+<a href="`+url+`">`+url+`</a>
+	`)
+
+	go func() {
+		d := gomail.NewDialer("smtp-relay.sendinblue.com", 587, "milo@httpscolonslashslashwww.com", SMTPPassword)
+		if err := d.DialAndSend(m); err != nil {
+			l.E.Printf("Could not send confirmation email for %v (%v): %v\n", email, user, err)
+			return
+		}
+		l.I.Printf("Confirmation email for %v (%v) sent!\n", email, user)
 	}()
 
 	return http.StatusOK
@@ -506,6 +599,18 @@ func FeedSubscribe(l *SessionLogger, id, url, name string) int {
 		}
 	}
 
+	ok := 0
+	err = Queries["FeedAlreadySubscibed"].Preped.QueryRow(id, feed).Scan(&ok)
+	if err != nil {
+		l.E.Printf("DB existence check failed for subscribed feed %v by user %v, error: %v\n", feed, id, err)
+		return http.StatusInternalServerError
+	}
+	if ok == 1 {
+		l.W.Printf("Feed %v already subscribed by user %v.\n", feed, id)
+		// This isn't a straight up error, but it isn't OK either.
+		return http.StatusAccepted
+	}
+
 	_, err = Queries["FeedSubscibe"].Preped.Exec(id, feed, name)
 	if err != nil {
 		l.E.Printf("Failed subscribing feed %v as user %v, error: %v\n", feed, id, err)
@@ -526,13 +631,13 @@ func FeedUnsub(l *SessionLogger, user, feed string) int {
 
 	// Now check if the feed has no subscribers.
 	hassub := 0
-	err = Queries["FeedExists"].Preped.QueryRow(feed).Scan(&hassub)
+	err = Queries["FeedHasSubs"].Preped.QueryRow(feed).Scan(&hassub)
 	if err != nil {
 		l.E.Printf("Feed subscriber check failed for feed %v, error: %v\n", feed, err)
 		return http.StatusInternalServerError
 	}
 	if hassub == 1 {
-		// If the feed still has other subscriberes delete our paused flags and slink off into the night.
+		// If the feed still has other subscribers delete our paused flags and slink off into the night.
 		_, err = Queries["FeedUnsub2"].Preped.Exec(user, feed)
 		if err != nil {
 			l.E.Printf("Failed unsubscribing feed %v as user %v, error: %v\n", feed, user, err)

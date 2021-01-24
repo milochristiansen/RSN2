@@ -44,6 +44,8 @@ export default {
 					if (res.ok) {
 						self.addstate = true
 						setTimeout(() => self.addstate = null, 3000)
+						self.url = ""
+						self.name = ""
 						self.$emit("added")
 						return
 					}
@@ -59,7 +61,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
 	form {
 		width: 100%;
 		display: flex;

@@ -22,12 +22,10 @@ function kbye {
 }
 
 GOPID=""
-NPMPID=""
 SLPPID=""
 function term {
 	echo ""
 	kbye "$GOPID"
-	kbye "$NPMPID"
 	kbye "$SLPPID"
 
 	echo "Cleanup finished."
@@ -42,6 +40,16 @@ if [ ! -d "app" ]; then
 	mkdir app
 fi
 
+# Run an NPM build if needed
+if [ -f "frontend/package.json" ]; then
+	cd frontend
+	npm i
+	npm run build
+	rm -r ../app/dist
+	mv dist ../app
+	cd ..
+fi
+
 # Start the go backend if this project has one
 if [ -f "server/go.mod" ]; then
 	cd server
@@ -49,15 +57,6 @@ if [ -f "server/go.mod" ]; then
 	cd ../app
 	"./${curdir}.bin" &
 	GOPID=$!
-	cd ..
-fi
-
-# Start the NPM frontend if this project has one
-if [ -f "frontend/package.json" ]; then
-	cd frontend
-	npm i
-	npm run serve &
-	NPMPID=$!
 	cd ..
 fi
 
