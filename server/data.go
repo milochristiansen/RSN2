@@ -66,6 +66,12 @@ func GetSession(l *SessionLogger, w http.ResponseWriter, r *http.Request) (strin
 		l.W.Printf("Error loading user from session.\n")
 		return "", http.StatusBadRequest
 	}
+
+	err := session.Save(r, w)
+	if err != nil {
+		l.W.Printf("Error saving session for user %v, error: %v\n", user, err)
+		return "", http.StatusInternalServerError
+	}
 	return user, http.StatusOK
 }
 
